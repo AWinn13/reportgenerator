@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import ReactDOM from "react-dom";
-import { useNavigate } from "react-router-dom";
-import SectionOne from "./SectionOne.jsx";
-import SectionTwo from "./SectionTwo.jsx";
-import SectionThree from "./SectionThree.jsx";
-import SectionFour from "./SectionFour.jsx";
+import { formFields } from "../assets/fieldConfig";
 import "../index.css";
-import data from "../assets/referringinfo.json" 
+import { refData } from "../assets/referringinfo";
 
 function Form() {
-  const navigate = useNavigate();
+  const [BMIBool, setBMIBool] = useState(false);
+  const [lossBool, setLossBool] = useState(true);
   const [formData, setFormData] = useState({
     dateOfFax: "",
     patientFirstName: "",
@@ -32,11 +29,11 @@ function Form() {
     heightInches: 0,
     weight: 0,
     BMI: 0,
-    BMIClassification:"",
+    BMIClassification: "",
     owText: "",
     owDuration: "",
     weightLossAttempts: [],
-    weightLossAttemptsFreeText:"",
+    weightLossAttemptsFreeText: "",
     weightChallenges: "",
     otherWeightChallenges: "",
     medicalIssues: "",
@@ -71,21 +68,46 @@ function Form() {
     signOff: "",
   });
 
-  
-
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (formData[name] == formData.gender) {
+    if (name == "gender") {
       assignPronouns(value);
     }
-    if(formData[name] == formData.referringInfo){
-      parseReferringInfo(value);
+    if (name == "referringInfo") {
+      parseReferringInfo(e.target.selectedIndex);
     }
     setFormData((prevState) => ({
       ...prevState,
       [name]: value,
     }));
+  };
+
+  // !! TODO REFACTOR
+  const weightLossChange = (e) => {
+    e.preventDefault();
+    let options = e.target.options;
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].selected) {
+        formData.weightLossAttempts.push(options[i].value);
+      }
+      if (options[i].value === "FREE TEXT") {
+        setLossBool(false);
+      } else {
+        setLossBool(true);
+      }
+    }
+  };
+
+  // !! TODO REFACTOR
+  const calculateBMI = (e) => {
+    e.preventDefault();
+
+    let heightIn =
+      parseInt(formData.heightFeet) * 12 + parseInt(formData.heightInches);
+    let aWeight = formData.weight * 703;
+    formData.BMI = aWeight / (heightIn * heightIn);
+
+    setBMIBool(true);
   };
 
   const assignPronouns = (value) => {
@@ -108,57 +130,83 @@ function Form() {
     }
   };
 
-  const parseReferringInfo = (value) => {
-    switch (value) {
-      case "A":
-        formData.referringProvider = data.A.provider;
-        formData.referringFacility = data.B.facility;
-        formData.referringAddress = data.A.address;
-        formData.referringCityState = data.A.cityState;
-        formData.referringFacilityFax = data.A.fax;
-        break;
-      case "B":
-        formData.referringProvider = data.B.provider;
-        formData.referringFacility = data.B.facility;
-        formData.referringAddress = data.B.address;
-        formData.referringCityState = data.B.cityState;
-        formData.referringFacilityFax = data.B.fax;
-        console.log(formData);
-        break;
-      case "C":
-        formData.referringProvider = data.C.provider;
-        formData.referringFacility = data.C.facility;
-        formData.referringAddress = data.C.address;
-        formData.referringCityState = data.C.cityState;
-        formData.referringFacilityFax = data.C.fax;
-        break;
-      case "D":
-        formData.referringProvider = data.D.provider;
-        formData.referringFacility = data.D.facility;
-        formData.referringAddress = data.D.address;
-        formData.referringCityState = data.D.cityState;
-        formData.referringFacilityFax = data.D.fax;
-        break;
-    }
+  const parseReferringInfo = (index) => {
+    formData.referringProvider = refData[index].provider;
+    formData.referringFacility = refData[index].facility;
+    formData.referringAddress = refData[index].address;
+    formData.referringCityState = refData[index].cityState;
+    formData.referringFacilityFax = refData[index].fax;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log(formData);
   };
+
   return (
     <div>
-      <h2 className="subtitle is-3">
-        Fill out all fields, hit submit for field validation and download the
-        document
-      </h2>
-      <form id="form" onSubmit={handleSubmit}>
-        <SectionOne formData={formData} handleChange={handleChange} />
-        <SectionTwo formData={formData} handleChange={handleChange} />
-        <SectionThree formData={formData} handleChange={handleChange} />
-        <SectionFour formData={formData} handleChange={handleChange} />
-        <button type="submit">Submit</button>
-      </form>
+      <div>
+        {formFields.map((field) => (
+          <div className="field" key={field.name}>
+            <label className="label">{field.label}</label>
+            <div className="control">
+              {field.type === "select" ? (
+                <div className="select">
+                  <select
+                    name={field.name}
+                    value={
+                      Array.isArray(formData[field.name])
+                        ? formData[field.name][0]
+                        : formData[field.name]
+                    }
+                    onChange={handleChange}>
+                    {field.options.map((option, index) => (
+                      <option key={index} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : field.type === "multiSelect" ? (
+                <div className="select">
+                  <select
+                    multiple
+                    name={field.name}
+                    value={
+                      Array.isArray(formData[field.name])
+                        ? formData[field.name][0]
+                        : formData[field.name]
+                    }
+                    onChange={handleChange}>
+                    {field.options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : field.type === "textarea" ? (
+                <textarea
+                  className="textarea"
+                  placeholder={field.label}
+                  name={field.name}
+                  value={formData[field.name]}
+                  onChange={handleChange}
+                />
+              ) : (
+                <input
+                  className="input"
+                  type={field.type}
+                  placeholder={field.label}
+                  name={field.name}
+                  value={formData[field.name]}
+                  onChange={handleChange}
+                />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
