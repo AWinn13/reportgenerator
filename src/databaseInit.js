@@ -1,0 +1,56 @@
+const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database('formConfig.db');
+
+db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS formData (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dateOfFax TEXT,
+    patientName TEXT,
+    DOB TEXT,
+    referringProvider TEXT,
+    referringFacility TEXT,
+    referringFacilityFax TEXT,
+    currentDate TEXT,
+    gender TEXT,
+    presentMood TEXT,
+    height TEXT,
+    weight TEXT,
+    owText TEXT,
+    owDuration TEXT,
+    weightLossAttempts TEXT,
+    weightChallenges TEXT,
+    otherWeightChallenges TEXT,
+    medicalIssues TEXT,
+    aditionalWeightLoss TEXT,
+    cronicPainBool TEXT,
+    cronicPainText TEXT,
+    goalWeight TEXT,
+    secondMedicalIssue TEXT,
+    sleepSatisfaction TEXT,
+    sleepApnea TEXT,
+    cpap TEXT,
+    tstFreeText TEXT,
+    medications TEXT,
+    currentEating TEXT,
+    currentEatingAlt TEXT,
+    numMeals TEXT,
+    snacks TEXT,
+    eatingHabits TEXT,
+    caloricIntake TEXT,
+    recentDiet TEXT,
+    recentLoss TEXT,
+    lossInMonths TEXT,
+    patientCity TEXT,
+    livingSituation TEXT,
+    employStatus TEXT,
+    employStatusText TEXT,
+    yearsOfEmploy TEXT,
+    yearsOfEmployText TEXT,
+    degree TEXT,
+    degreeText TEXT,
+    includeSentence TEXT,
+    signOff TEXT
+  )`);
+});
+
+db.close();
