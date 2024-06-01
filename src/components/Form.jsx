@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import ReactDOM from "react-dom";
-import { formFields } from "../assets/fieldConfig";
+import { formFields } from "../data/fieldConfig";
 import "../index.css";
-import { refData } from "../assets/referringinfo";
+import { refData } from "../data/referringinfo";
 
 function Form() {
   const [BMIBool, setBMIBool] = useState(false);
@@ -70,45 +70,55 @@ function Form() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name == "gender") {
-      assignPronouns(value);
+    switch (name) {
+      case "gender":
+        assignPronouns(value);
+        break;
+      case "referringInfo":
+        parseReferringInfo(e.target.selectedIndex);
+        break;
+      case "weightLossAttempts":
+        weightLossChange(e);
+        break;
+      default:
+        setFormData((prevState) => ({
+          ...prevState,
+          [name]: value,
+        }));
+        break;
     }
-    if (name == "referringInfo") {
-      parseReferringInfo(e.target.selectedIndex);
-    }
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
   };
 
-  // !! TODO REFACTOR
   const weightLossChange = (e) => {
     e.preventDefault();
     let options = e.target.options;
-    for (let i = 0; i < options.length; i++) {
-      if (options[i].selected) {
-        formData.weightLossAttempts.push(options[i].value);
+    options.forEach((option) => {
+      if (option.selected) {
+        formData.weightLossAttempts.push(option.value);
       }
-      if (options[i].value === "FREE TEXT") {
-        setLossBool(false);
-      } else {
-        setLossBool(true);
-      }
-    }
+    });
   };
 
   // !! TODO REFACTOR
   const calculateBMI = (e) => {
     e.preventDefault();
-
     let heightIn =
       parseInt(formData.heightFeet) * 12 + parseInt(formData.heightInches);
     let aWeight = formData.weight * 703;
     formData.BMI = aWeight / (heightIn * heightIn);
-
     setBMIBool(true);
   };
+// !! TODO weightLoss challenges multi select and free text
+//!! second medical issue
+//!! sleep apnea
+//!! cpap
+//!! current eating
+//!! eating habits
+//!! living situation
+//!! include sentence
+//!! sign off
+//!! FONT and styling 
+
 
   const assignPronouns = (value) => {
     switch (value) {
@@ -140,7 +150,12 @@ function Form() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(formData);
+    let emptyData = Object.values(formData).filter((data) => data === "");
+    if (emptyData.length > 0) {
+      alert("Please fill out all fields, the following are empty: " + emptyData);
+      return;
+    }
+
   };
 
   return (
