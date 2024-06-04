@@ -1,7 +1,4 @@
 
-:root {
-  --blue-color: #3498db;
-}
 
 
 body {
@@ -10,33 +7,8 @@ body {
   margin: auto;
   max-width: 38rem;
   padding: 2rem;
-  background-color: rgb(154, 163, 154);
-}
-input, select, textarea {
-  width: 100%;
-  padding: 15px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 25px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
-  margin-bottom: 3%;
-}
-
-label{
-  padding: 2%;
-}
-
-button{
-  height: 3rem;
-  width: 5rem;
-  font-size: larger;
-  border-color: var(--blue-color);
-  color: #fff;
-  box-shadow: 0 0 40px 40px var(--blue-color) inset, 0 0 0 0 var(--blue-color);
-  transition: all 150ms ease-in-out;
   
-
 }
+
+
 
