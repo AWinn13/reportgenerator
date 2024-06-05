@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import ReactDOM from "react-dom";
 import { formFields } from "../data/fieldConfig";
 import "../index.css";
-import "../output.css";
 import {
   TextField,
   MenuItem,
@@ -11,12 +10,31 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
+  Stack,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { styled } from "@mui/material/styles";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { refData } from "../data/referringinfo";
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs, { Dayjs } from "dayjs";
+
+
+  // !! TODO weightLoss challenges multi select and free text
+  //!! second medical issue
+  //!! sleep apnea
+  //!! cpap
+  //!! current eating
+  //!! eating habits
+  //!! living situation
+  //!! include sentence
+  //!! sign off
+  //!! fix checkbox
+
+
+
 
 function Form() {
   const [BMIBool, setBMIBool] = useState(false);
@@ -54,12 +72,12 @@ function Form() {
     otherWeightChallenges: "",
     medicalIssues: "",
     aditionalWeightLoss: "",
-    cronicPainBool: "",
+    cronicPainBool: false,
     cronicPainText: "",
     goalWeight: "",
     secondMedicalIssue: "",
     sleepSatisfaction: "",
-    sleepApnea: "",
+    sleepApnea: false,
     cpap: "",
     tstFreeText: "",
     medications: "",
@@ -81,11 +99,11 @@ function Form() {
     degree: "",
     degreeText: "",
     includeSentence: "",
-    signOff: "",
+    signOff: false,
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     switch (name) {
       case "gender":
         assignPronouns(value);
@@ -99,8 +117,10 @@ function Form() {
       default:
         setFormData((prevState) => ({
           ...prevState,
-          [name]: value,
+          [name]: type === 'checkbox' ? checked : value,
         }));
+        console.log(formData);
+        console.log(`${name}: ${type === 'checkbox' ? checked : value}`); // Log the checkbox state
         break;
     }
   };
@@ -115,7 +135,6 @@ function Form() {
     });
   };
 
-  // !! TODO REFACTOR
   const calculateBMI = () => {
     let heightIn =
       parseInt(formData.heightFeet) * 12 + parseInt(formData.heightInches);
@@ -144,16 +163,6 @@ function Form() {
     console.log(formData);
     setBMIBool(true);
   };
-  // !! TODO weightLoss challenges multi select and free text
-  //!! second medical issue
-  //!! sleep apnea
-  //!! cpap
-  //!! current eating
-  //!! eating habits
-  //!! living situation
-  //!! include sentence
-  //!! sign off
-  //!! FONT and styling
 
   const assignPronouns = (value) => {
     switch (value) {
@@ -185,6 +194,7 @@ function Form() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log(formData);
     let emptyData = [];
     for (const key in formData) {
       formData[key] ? null : emptyData.push(key);
@@ -199,78 +209,111 @@ function Form() {
     calculateBMI();
   };
 
+  const Item = styled("div")(({ theme }) => ({
+    // backgroundColor: theme.palette.primary.main,
+    textAlign: "center",
+    padding: 20,
+  }));
+
   return (
-    <div className="container mx-auto p-4 bg-davygray">
+    <div style={{ width: "100%" }}>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <form onSubmit={handleSubmit}>
-        {formFields.map((field) => (
-          <div className="form-control mb-4" key={field.name}>
-            {field.type === "select" ? (
-              <FormControl fullWidth>
-                <InputLabel>{field.label}</InputLabel>
-                <Select
-                  name={field.name}
-                  value={formData[field.name]}
-                  onChange={handleChange}>
-                  {field.options.map((option, index) => (
-                    <MenuItem key={index} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </Select>
-                <FormHelperText>Select an option</FormHelperText>
-              </FormControl>
-            ) : field.type === "multiSelect" ? (
-              <FormControl fullWidth>
-                <InputLabel>{field.label}</InputLabel>
-                <Select
-                  multiple
-                  name={field.name}
-                  value={formData[field.name]}
-                  onChange={handleChange}>
-                  {field.options.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-                </Select>
-                <FormHelperText>Select multiple options</FormHelperText>
-              </FormControl>
-            ) : field.type === "textarea" ? (
-              <TextField
-                label={field.label}
-                name={field.name}
-                value={formData[field.name]}
-                onChange={handleChange}
-                multiline
-                fullWidth
-                variant="outlined"
-              />
-            ) : field.type === "date" ? (
-              
-                <DatePicker
-                  label={field.label}
-                  value={today}
-                  onChange={(date) => handleDateChange(field.name, date)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
-            ) : (
-              <TextField
-                label={field.label}
-                type={field.type}
-                name={field.name}
-                value={formData[field.name]}
-                onChange={handleChange}
-                fullWidth
-                variant="outlined"
-              />
-            )}
-          </div>
-        ))}
-        <Button variant="contained" color="mossgreen" type="submit">
-          Submit
-        </Button>
-      </form>
+        <form onSubmit={handleSubmit}>
+          <Stack spacing={2}>
+            {formFields.map((field) => (
+              <div key={field.name}>
+                {field.type === "select" ? (
+                  <Item>
+                    <FormControl fullWidth>
+                      <InputLabel>{field.label}</InputLabel>
+                      <Select
+                        name={field.name}
+                        value={formData[field.name]}
+                        onChange={handleChange}>
+                        {field.options.map((option, index) => (
+                          <MenuItem key={index} value={option}>
+                            {option}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      <FormHelperText>Select an option</FormHelperText>
+                    </FormControl>
+                  </Item>
+                ) : field.type === "multiSelect" ? (
+                  <Item>
+                    <FormControl fullWidth>
+                      <InputLabel>{field.label}</InputLabel>
+                      <Select
+                        multiple
+                        name={field.name}
+                        value={formData[field.name]}
+                        onChange={handleChange}>
+                        {field.options.map((option) => (
+                          <MenuItem key={option} value={option}>
+                            {option}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      <FormHelperText>Select multiple options</FormHelperText>
+                    </FormControl>
+                  </Item>
+                ) : field.type === "textarea" ? (
+                  <Item>
+                    <TextField
+                      label={field.label}
+                      name={field.name}
+                      value={formData[field.name]}
+                      onChange={handleChange}
+                      multiline
+                      fullWidth
+                      variant="outlined"
+                    />
+                  </Item>
+                ) : field.type === "date" ? (
+                  <Item>
+                    <DatePicker
+                      label={field.label}
+                      value={today}
+                      onChange={(date) => handleDateChange(field.name, date)}
+                      renderInput={(params) => (
+                        <TextField {...params} fullWidth />
+                      )}
+                    />
+                  </Item>
+                ) : field.type == "checkbox" ? (
+                  <Item>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          name={field.name}
+                          checked={formData[field.name]}
+                          onChange={handleChange}
+                        />
+                      }
+                      label={field.label}
+                      labelPlacement="start"
+                    />
+                  </Item>
+                ) : (
+                  <Item>
+                    <TextField
+                      label={field.label}
+                      type={field.type}
+                      name={field.name}
+                      value={formData[field.name]}
+                      onChange={handleChange}
+                      fullWidth
+                      variant="outlined"
+                    />
+                  </Item>
+                )}
+              </div>
+            ))}
+          </Stack>
+          <Button variant="contained" color="mossgreen" type="submit">
+            Submit
+          </Button>
+        </form>
       </LocalizationProvider>
     </div>
   );

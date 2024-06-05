@@ -5,7 +5,6 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Form from "./components/Form.jsx";
 import "./index.css";
-import "./output.css";
 
 function App() {
   return (

@@ -27,7 +27,6 @@
  */
 
 import './index.css';
-import './output.css';
 import './index.jsx'
 
 
