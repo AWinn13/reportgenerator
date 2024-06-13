@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import ReactDOM from "react-dom";
 import { formFields } from "../data/fieldConfig";
 import "../index.css";
@@ -21,24 +21,18 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { refData } from "../data/referringinfo";
 import dayjs, { Dayjs } from "dayjs";
 
-
-  // !! TODO weightLoss challenges multi select and free text
-  //!! second medical issue
-  //!! sleep apnea
-  //!! cpap
-  //!! current eating
-  //!! eating habits
-  //!! living situation
-  //!! include sentence
-  //!! sign off
-  //!! fix checkbox
-
-
-
+// !! TODO weightLoss challenges multi select and free text
+//!! second medical issue
+//!! sleep apnea
+//!! cpap
+//!! current eating
+//!! eating habits
+//!! living situation
+//!! include sentence
+//!! sign off
 
 function Form() {
   const [BMIBool, setBMIBool] = useState(false);
-  const [lossBool, setLossBool] = useState(true);
 
   const [today, setToday] = useState(dayjs("2024-01-01"));
   const [formData, setFormData] = useState({
@@ -46,15 +40,19 @@ function Form() {
     patientFirstName: "",
     patientLastName: "",
     DOB: "",
+    Age: 0,
     referringInfo: "",
     referringProvider: "",
     referringFacility: "",
-    referringAddress: "",
+    referringAddressA: "",
+    referringAddressB: "",
+    referringAddressC: "",
     referringCityState: "",
     referringFacilityFax: "",
     currentDate: "",
     gender: "",
     pronoun: "",
+    capPronoun: "",
     possessive: "",
     genderContraction: "",
     evalDate: "",
@@ -68,17 +66,30 @@ function Form() {
     owDuration: "",
     weightLossAttempts: [],
     weightLossAttemptsFreeText: "",
-    weightChallenges: "",
+    weightChallenges: [],
+    certainFoodCravings: "",
     otherWeightChallenges: "",
     medicalIssues: "",
-    aditionalWeightLoss: "",
+    additionalWeightLossReasons: [],
+    additionalWeightLossFreeText: "",
     cronicPainBool: false,
+    cronicPainSentence: "",
     cronicPainText: "",
-    goalWeight: "",
+    replacementSurgeryBool: false,
+    replacementSurgerySentence: "",
+    diabetes: false,
+    goalWeight: 0,
+    goalBMI: 0,
+    goalBMIClassification: "",
     secondMedicalIssue: "",
-    sleepSatisfaction: "",
+    sleepSatisfaction: false,
+    sleepSatisfactionText: "dissatisfied",
     sleepApnea: false,
-    cpap: "",
+    sleepApneaSentence: "",
+    cpap: false,
+    hypnotics: false,
+    hypnoticsText: "",
+    hypnoticsSentence: "",
     tstFreeText: "",
     medications: "",
     currentEating: "",
@@ -98,12 +109,17 @@ function Form() {
     yearsOfEmployText: "",
     degree: "",
     degreeText: "",
-    includeSentence: "",
+    includeSentence: false,
     signOff: false,
   });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+
     switch (name) {
       case "gender":
         assignPronouns(value);
@@ -114,116 +130,294 @@ function Form() {
       case "weightLossAttempts":
         weightLossChange(e);
         break;
-      default:
+      case "DOB":
+        calculateAge(value);
+        break;
+      case "goalWeight":
+      case "weight":
+        calculateBMI(name, value);
+        break;
+      case "certainFoodCravings":
+        let str = "Regarding the latter, he has a particular affinity for";
+        str = str.concat(value);
         setFormData((prevState) => ({
           ...prevState,
-          [name]: type === 'checkbox' ? checked : value,
+          certainFoodCravings: str,
         }));
-        console.log(formData);
-        console.log(`${name}: ${type === 'checkbox' ? checked : value}`); // Log the checkbox state
+        break;
+      case "additionalWeightLossReasons":
+        setAdditionalWeightLossReasons(e);
+        break;
+      case "sleepSatisfaction":
+        if (checked){
+          setFormData((prevState) => ({
+            ...prevState,
+            sleepSatisfactionText: "satisfied"
+          }));
+        };
+      default:
         break;
     }
+  };
+
+  const calculateAge = (dob) => {
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+    setFormData((prevState) => ({
+      ...prevState,
+      Age: age,
+    }));
   };
 
   const weightLossChange = (e) => {
-    e.preventDefault();
-    let options = e.target.options;
-    options.forEach((option) => {
-      if (option.selected) {
-        formData.weightLossAttempts.push(option.value);
+    const { options } = e.target;
+    const selectedOptions = [];
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].selected) {
+        selectedOptions.push(options[i].value);
       }
-    });
+    }
+    setFormData((prevState) => ({
+      ...prevState,
+      weightLossAttempts: selectedOptions,
+    }));
   };
 
-  const calculateBMI = () => {
+  const calculateBMI = (name, value) => {
+    let weight = parseInt(value);
     let heightIn =
       parseInt(formData.heightFeet) * 12 + parseInt(formData.heightInches);
-    let aWeight = formData.weight * 703;
-    formData.BMI = aWeight / (heightIn * heightIn);
+    let aWeight = weight * 703;
+    let BMI = aWeight / (heightIn * heightIn);
+
+    let BMIClassification = "";
+
     switch (true) {
-      case formData.BMI < 25:
-        formData.BMIClassification = "normal weight";
+      case BMI < 25:
+        BMIClassification = "normal weight";
         break;
-      case formData.BMI >= 25 && formData.BMI < 30:
-        formData.BMIClassification = "overweight";
+      case BMI >= 25 && BMI < 30:
+        BMIClassification = "overweight";
         break;
-      case formData.BMI >= 30 && formData.BMI < 35:
-        formData.BMIClassification = "obese, classification I";
+      case BMI >= 30 && BMI < 35:
+        BMIClassification = "obese, classification I";
         break;
-      case formData.BMI >= 35.1 && formData.BMI < 39.9:
-        formData.BMIClassification = "obese, classification II";
+      case BMI >= 35.1 && BMI < 39.9:
+        BMIClassification = "obese, classification II";
         break;
-      case formData.BMI >= 40:
-        formData.BMIClassification = "severely obese, classification III";
+      case BMI >= 40:
+        BMIClassification = "severely obese, classification III";
         break;
       default:
-        formData.BMIClassification = "unknown";
+        BMIClassification = "unknown";
         break;
     }
-    console.log(formData);
-    setBMIBool(true);
+    BMI = parseInt(BMI, 10);
+    if (name === "goalWeight") {
+      setFormData((prevState) => ({
+        ...prevState,
+        goalBMI: BMI,
+        goalBMIClassification: BMIClassification,
+      }));
+    } else {
+      setFormData((prevState) => ({
+        ...prevState,
+        BMI,
+        BMIClassification,
+      }));
+    }
   };
 
   const assignPronouns = (value) => {
-    switch (value) {
-      case "male":
-        formData.pronoun = "he";
-        formData.possessive = "his";
-        formData.genderContraction = "Mr.";
-        break;
-      case "female":
-        formData.pronoun = "she";
-        formData.possessive = "her";
-        formData.genderContraction = "Ms.";
-        break;
-      case "nonBinary":
-        formData.pronoun = "they";
-        formData.possessive = "their";
-        formData.genderContraction = "Mx.";
-        break;
+    let pronoun, capPronoun, possessive, genderContraction;
+    if (value === "male") {
+      pronoun = "he";
+      capPronoun = "He";
+      possessive = "his";
+      genderContraction = "Mr.";
+    } else if (value === "female") {
+      pronoun = "she";
+      capPronoun = "She";
+      possessive = "her";
+      genderContraction = "Ms.";
+    } else if (value === "nonBinary") {
+      pronoun = "they";
+      capPronoun = "They";
+      possessive = "their";
+      genderContraction = "Mx.";
     }
+    setFormData((prevState) => ({
+      ...prevState,
+      pronoun,
+      possessive,
+      genderContraction,
+      capPronoun,
+    }));
   };
 
   const parseReferringInfo = (index) => {
-    formData.referringProvider = refData[index].provider;
-    formData.referringFacility = refData[index].facility;
-    formData.referringAddress = refData[index].address;
-    formData.referringCityState = refData[index].cityState;
-    formData.referringFacilityFax = refData[index].fax;
+    setFormData((prevState) => ({
+      ...prevState,
+      referringProvider: refData[index].provider,
+      referringFacility: refData[index].facility,
+      referringAddress: refData[index].address,
+      referringCityState: refData[index].cityState,
+      referringFacilityFax: refData[index].fax,
+    }));
+  };
+
+  const setAdditionalWeightLossReasons = (e) => {
+    const { options } = e.target;
+    const selectedOptions = [];
+    if (options) {
+      for (let i = 0; i < options.length; i++) {
+        if (options[i].selected) {
+          switch (options[i].value) {
+            case "Self-worth":
+              selectedOptions.push(
+                `${formData.capPronoun} believes that weight loss will help to bolster his feelings of self-worth`
+              );
+              break;
+            case "Self-confidence":
+              selectedOptions.push(
+                `${formData.capPronoun} believes that weight loss will bolster his feelings of self-confidence`
+              );
+              break;
+            case "Energy":
+              selectedOptions.push(
+                `Currently, ${formData.pronoun} is easily fatigued and anticipates that weight loss will lead to a greater degree of physical stamina`
+              );
+              break;
+            case "Fitness":
+              selectedOptions.push(
+                `Currently, ${formData.capPronoun} is seeking to achieve a greater level of physical fitness and stamina`
+              );
+              break;
+            case "Mobility":
+              selectedOptions.push(
+                `Currently, ${formData.capPronoun} is seeking to achieve an improved level of physical mobility.`
+              );
+              break;
+            default:
+              break;
+          }
+        }
+      }
+      setFormData((prevState) => ({
+        ...prevState,
+        additionalWeightLossReasons: selectedOptions,
+      }));
+    }
+    console.log(selectedOptions);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log(formData);
-    let emptyData = [];
-    for (const key in formData) {
-      formData[key] ? null : emptyData.push(key);
-    }
-    console.log(emptyData);
-    if (emptyData.length > 0) {
+    const filteredData = Object.fromEntries(
+      Object.entries(formData).filter(([key, value]) => value)
+    );
+    if (Object.keys(filteredData).length !== Object.keys(formData).length) {
+      const emptyData = Object.keys(formData).filter(
+        (key) => !filteredData.hasOwnProperty(key)
+      );
       alert(
-        "Please fill out all fields, the following are empty: " + emptyData
+        "Please fill out all fields, the following are empty: " +
+          emptyData.join(", ")
       );
       return;
     }
-    calculateBMI();
+    if (formData.cronicPainBool) {
+      handlePain();
+    }
+    if (formData.replacementSurgeryBool) {
+      handleReplacement();
+    }
+    if (formData.diabetes) {
+      handleDiabetes();
+    }
+    if (formData.sleepApnea) {
+      handleApnea();
+    }
+    if (formData.hypnotics) {
+      handleHypnotics();
+    }
   };
 
-  const Item = styled("div")(({ theme }) => ({
-    // backgroundColor: theme.palette.primary.main,
-    textAlign: "center",
-    padding: 20,
-  }));
+  const handlePain = () => {
+    let painStr = `${formData.genderContraction}.${formData.patientLastName} also has chronic ${formData.cronicPainText} and anticipates that significant weight loss will help to alleviate his discomfort.`;
+    setFormData((prevState) => ({
+      ...prevState,
+      cronicPainSentence: painStr,
+    }));
+  };
+
+  const handleReplacement = () => {
+    let replaceStr = `${formData.genderContraction}.${formData.patientLastName} also anticipates needing a hip replacement and needs to demonstrate some degree of weight loss before ${formData.pronoun} is a candidate for this procedure.`;
+    setFormData((prevState) => ({
+      ...prevState,
+      replacementSurgerySentence: replaceStr,
+    }));
+  };
+
+  const handleDiabetes = () => {
+    let replaceStr = `${formData.genderContraction}.${formData.patientLastName} also has diabetes and seeks to better manage this condition via lifestyle change.`;
+    setFormData((prevState) => ({
+      ...prevState,
+      replacementSurgerySentence: replaceStr,
+    }));
+  };
+
+  const handleApnea = () => {
+    let apneaStr;
+    if (formData.cpap) {
+      apneaStr = `This patient has sleep apnea and regularly wears ${formData.possessive} CPAP device`;
+    } else {
+      apneaStr = "This patient has sleep apnea but does not use a CPAP device";
+    }
+    setFormData((prevState) => ({
+      ...prevState,
+      sleepApneaSentence: apneaStr,
+    }));
+  }
+
+    const handleHypnotics = () => {
+      let hypStr = `This patient takes the following to help with sleep onset: ${formData.hypnoticsText}`;
+      setFormData((prevState) => ({
+        ...prevState,
+        hypnoticsSentence: hypStr,
+      }));
+    }
+
+
+  const handleDateChange = (name, date) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: date,
+    }));
+  };
+
+  const displayBMI = () => {
+    setBMIBool(true);
+  };
 
   return (
-    <div style={{ width: "100%" }}>
+    <div style={{ width: "75%" }}>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {formFields.map((field) => (
               <div key={field.name}>
                 {field.type === "select" ? (
-                  <Item>
+                  <div>
                     <FormControl fullWidth>
                       <InputLabel>{field.label}</InputLabel>
                       <Select
@@ -238,27 +432,36 @@ function Form() {
                       </Select>
                       <FormHelperText>Select an option</FormHelperText>
                     </FormControl>
-                  </Item>
-                ) : field.type === "multiSelect" ? (
-                  <Item>
+                  </div>
+                ) : //--------------------------------------------------
+                field.type === "multiSelect" ? (
+                  <div>
                     <FormControl fullWidth>
-                      <InputLabel>{field.label}</InputLabel>
+                      <InputLabel shrink htmlFor="select-multiple">
+                        {field.label}
+                      </InputLabel>
                       <Select
                         multiple
+                        native
+                        inputProps={{
+                          id: "select-multiple",
+                        }}
+                        label={field.label}
                         name={field.name}
                         value={formData[field.name]}
                         onChange={handleChange}>
                         {field.options.map((option) => (
-                          <MenuItem key={option} value={option}>
+                          <option key={option} value={option}>
                             {option}
-                          </MenuItem>
+                          </option>
                         ))}
                       </Select>
                       <FormHelperText>Select multiple options</FormHelperText>
                     </FormControl>
-                  </Item>
-                ) : field.type === "textarea" ? (
-                  <Item>
+                  </div>
+                ) : //--------------------------------------------------
+                field.type === "textarea" ? (
+                  <div>
                     <TextField
                       label={field.label}
                       name={field.name}
@@ -268,9 +471,10 @@ function Form() {
                       fullWidth
                       variant="outlined"
                     />
-                  </Item>
-                ) : field.type === "date" ? (
-                  <Item>
+                  </div>
+                ) : //--------------------------------------------------
+                field.type === "date" ? (
+                  <div>
                     <DatePicker
                       label={field.label}
                       value={today}
@@ -279,9 +483,10 @@ function Form() {
                         <TextField {...params} fullWidth />
                       )}
                     />
-                  </Item>
-                ) : field.type == "checkbox" ? (
-                  <Item>
+                  </div>
+                ) : //--------------------------------------------------
+                field.type == "checkbox" ? (
+                  <div>
                     <FormControlLabel
                       control={
                         <Checkbox
@@ -293,9 +498,28 @@ function Form() {
                       label={field.label}
                       labelPlacement="start"
                     />
-                  </Item>
+                  </div>
+                ) : //--------------------------------------------------
+                field.type == "button" ? (
+                  <div>
+                    <Button
+                      name={field.name}
+                      checked={formData[field.name]}
+                      onClick={displayBMI}
+                      type="button"
+                      variant="contained">
+                      {field.label}
+                    </Button>
+                    {BMIBool && (
+                      <div>
+                        <p>BMI: {formData.BMI}</p>
+                        <p>BMI Classification: {formData.BMIClassification}</p>
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <Item>
+                  //--------------------------------------------------
+                  <div>
                     <TextField
                       label={field.label}
                       type={field.type}
@@ -305,12 +529,12 @@ function Form() {
                       fullWidth
                       variant="outlined"
                     />
-                  </Item>
+                  </div>
                 )}
               </div>
             ))}
           </Stack>
-          <Button variant="contained" color="mossgreen" type="submit">
+          <Button variant="contained" color="amaranth" type="submit">
             Submit
           </Button>
         </form>

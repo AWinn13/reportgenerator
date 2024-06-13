@@ -7,9 +7,13 @@ import CssBaseline from '@mui/material/CssBaseline';
 
 
 const theme = createTheme({
+  typography: {
+    fontSize: 18,
+    fontWeightBold: 700,
+  },
   palette: {
     background: {
-      default: "#607b7d"
+      default: "#91b0b3"
     },
     davygray: {
       main: "#545454",
