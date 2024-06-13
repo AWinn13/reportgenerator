@@ -21,16 +21,17 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { refData } from "../data/referringinfo";
 import dayjs, { Dayjs } from "dayjs";
 
-// !! TODO weightLoss challenges multi select and free text
-//!! second medical issue
-//!! sleep apnea
-//!! cpap
 //!! current eating
 //!! eating habits
 //!! living situation
 //!! include sentence
 //!! sign off
 
+/**
+ * Represents a form component.
+ *
+ * @returns {JSX.Element} The form component.
+ */
 function Form() {
   const [BMIBool, setBMIBool] = useState(false);
 
@@ -72,9 +73,9 @@ function Form() {
     medicalIssues: "",
     additionalWeightLossReasons: [],
     additionalWeightLossFreeText: "",
-    cronicPainBool: false,
-    cronicPainSentence: "",
-    cronicPainText: "",
+    chronicPainBool: false,
+    chronicPainSentence: "",
+    chronicPainText: "",
     replacementSurgeryBool: false,
     replacementSurgerySentence: "",
     diabetes: false,
@@ -96,7 +97,7 @@ function Form() {
     currentEatingAlt: "",
     numMeals: "",
     snacks: "",
-    eatingHabits: "",
+    eatingHabits: [],
     caloricIntake: "",
     recentDiet: "",
     recentLoss: "",
@@ -104,15 +105,21 @@ function Form() {
     patientCity: "",
     livingSituation: "",
     employStatus: "",
-    employStatusText: "",
     yearsOfEmploy: "",
-    yearsOfEmployText: "",
+    employStatusText: "",
+    formerEmploy: "",
     degree: "",
     degreeText: "",
     includeSentence: false,
-    signOff: false,
+    sentenceIncluded: "",
+    signOff1: false,
+    signOff2: false,
   });
 
+  /**
+   * Handles the change event for form inputs.
+   * @param {Event} e - The change event object.
+   */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prevState) => ({
@@ -149,17 +156,43 @@ function Form() {
         setAdditionalWeightLossReasons(e);
         break;
       case "sleepSatisfaction":
-        if (checked){
+        if (checked) {
           setFormData((prevState) => ({
             ...prevState,
-            sleepSatisfactionText: "satisfied"
+            sleepSatisfactionText: "satisfied",
           }));
-        };
+        }
+        break;
+      case "includeSentence":
+        setFormData((prevState) => ({
+          ...prevState,
+          sentenceIncluded: `To ${formData.possessive} credit, ${formData.pronoun} has recently implemented a number of healthful lifestyle and dietary changes, resulting in significant weight loss`,
+        }));
+        break;
+      case "signOff1":
+        if (checked) {
+          setFormData((prevState) => ({
+            ...prevState,
+            signOff1: "Thank you for this referral",
+          }));
+        }
+        break;
+      case "signOff2":
+        if (checked) {  
+          setFormData((prevState) => ({
+            ...prevState,
+            signOff1: `It was a pleasure evaluating ${formData.genderContraction}.${formData.patientLastName}`,
+          }));
+        }
       default:
         break;
     }
   };
 
+  /**
+   * Calculates the age based on the given date of birth.
+   * @param {string} dob - The date of birth in string format (e.g., "YYYY-MM-DD").
+   */
   const calculateAge = (dob) => {
     const today = new Date();
     const birthDate = new Date(dob);
@@ -177,6 +210,12 @@ function Form() {
     }));
   };
 
+  /**
+   * Handles the change event for the weight loss select input.
+   * Updates the weight loss attempts in the form data state.
+   *
+   * @param {Event} e - The change event object.
+   */
   const weightLossChange = (e) => {
     const { options } = e.target;
     const selectedOptions = [];
@@ -191,6 +230,14 @@ function Form() {
     }));
   };
 
+  /**
+   * Calculates the BMI (Body Mass Index) based on the provided weight and height values.
+   * Updates the BMI and BMIClassification in the form data.
+   *
+   * @param {string} name - The name of the input field.
+   * @param {string} value - The value of the input field.
+   * @returns {void}
+   */
   const calculateBMI = (name, value) => {
     let weight = parseInt(value);
     let heightIn =
@@ -236,6 +283,11 @@ function Form() {
     }
   };
 
+  /**
+   * Assigns pronouns based on the given value.
+   *
+   * @param {string} value - The value representing the gender.
+   */
   const assignPronouns = (value) => {
     let pronoun, capPronoun, possessive, genderContraction;
     if (value === "male") {
@@ -263,6 +315,10 @@ function Form() {
     }));
   };
 
+  /**
+   * Parses the referring information based on the given index and updates the form data.
+   * @param {number} index - The index of the referring information to parse.
+   */
   const parseReferringInfo = (index) => {
     setFormData((prevState) => ({
       ...prevState,
@@ -274,6 +330,12 @@ function Form() {
     }));
   };
 
+  /**
+   * Sets the additional weight loss reasons based on the selected options.
+   *
+   * @param {Event} e - The event object representing the change event.
+   * @returns {void}
+   */
   const setAdditionalWeightLossReasons = (e) => {
     const { options } = e.target;
     const selectedOptions = [];
@@ -319,6 +381,12 @@ function Form() {
     console.log(selectedOptions);
   };
 
+  /**
+   * Handles the form submission.
+   *
+   * @param {Event} e - The form submission event.
+   * @returns {void}
+   */
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log(formData);
@@ -335,7 +403,7 @@ function Form() {
       );
       return;
     }
-    if (formData.cronicPainBool) {
+    if (formData.chronicPainBool) {
       handlePain();
     }
     if (formData.replacementSurgeryBool) {
@@ -352,14 +420,20 @@ function Form() {
     }
   };
 
+  /**
+   * Handles the pain data and updates the form data state.
+   */
   const handlePain = () => {
-    let painStr = `${formData.genderContraction}.${formData.patientLastName} also has chronic ${formData.cronicPainText} and anticipates that significant weight loss will help to alleviate his discomfort.`;
+    let painStr = `${formData.genderContraction}.${formData.patientLastName} also has chronic ${formData.chronicPainText} and anticipates that significant weight loss will help to alleviate his discomfort.`;
     setFormData((prevState) => ({
       ...prevState,
-      cronicPainSentence: painStr,
+      chronicPainSentence: painStr,
     }));
   };
 
+  /**
+   * Handles the replacement surgery sentence generation.
+   */
   const handleReplacement = () => {
     let replaceStr = `${formData.genderContraction}.${formData.patientLastName} also anticipates needing a hip replacement and needs to demonstrate some degree of weight loss before ${formData.pronoun} is a candidate for this procedure.`;
     setFormData((prevState) => ({
@@ -368,6 +442,9 @@ function Form() {
     }));
   };
 
+  /**
+   * Handles the diabetes condition for the patient.
+   */
   const handleDiabetes = () => {
     let replaceStr = `${formData.genderContraction}.${formData.patientLastName} also has diabetes and seeks to better manage this condition via lifestyle change.`;
     setFormData((prevState) => ({
@@ -376,6 +453,9 @@ function Form() {
     }));
   };
 
+  /**
+   * Handles the sleep apnea logic and updates the form data accordingly.
+   */
   const handleApnea = () => {
     let apneaStr;
     if (formData.cpap) {
@@ -387,17 +467,25 @@ function Form() {
       ...prevState,
       sleepApneaSentence: apneaStr,
     }));
-  }
+  };
 
-    const handleHypnotics = () => {
-      let hypStr = `This patient takes the following to help with sleep onset: ${formData.hypnoticsText}`;
-      setFormData((prevState) => ({
-        ...prevState,
-        hypnoticsSentence: hypStr,
-      }));
-    }
+  /**
+   * Handles the action for hypnotics.
+   */
+  const handleHypnotics = () => {
+    let hypStr = `This patient takes the following to help with sleep onset: ${formData.hypnoticsText}`;
+    setFormData((prevState) => ({
+      ...prevState,
+      hypnoticsSentence: hypStr,
+    }));
+  };
 
-
+  /**
+   * Handles the change of a date value in the form.
+   *
+   * @param {string} name - The name of the date field.
+   * @param {Date} date - The new date value.
+   */
   const handleDateChange = (name, date) => {
     setFormData((prevState) => ({
       ...prevState,
@@ -405,6 +493,9 @@ function Form() {
     }));
   };
 
+  /**
+   * Displays the BMI.
+   */
   const displayBMI = () => {
     setBMIBool(true);
   };
