@@ -28,7 +28,7 @@ export const formFields = [
   { label: "Present Mood", type: "textarea", name: "presentMood" },
   { label: "Height - feet", type: "text", name: "heightFeet" },
   { label: "Height - Inches", type: "text", name: "heightInches" },
-  { label: "Weight", type: "text", name: "weight" },
+  { label: "Weight", type: "number", name: "weight" },
   { label: "Calculate BMI", type: "button", name: "calculateBMI" },
   { label: "Overweight Text", type: "textarea", name: "owText" },
   { label: "Overweight Duration", type: "textarea", name: "owDuration" },
@@ -91,7 +91,7 @@ export const formFields = [
   {
     label: "Additional Weight Loss Reasons",
     type: "multiSelect",
-    name: "additionalWeightLossReasons",
+    name: "additionalWeightLossReasonsDisplay",
     options: ["Self-worth", "Self-confidence", "Energy", "Fitness", "Mobility"],
   },
   {
@@ -160,8 +160,8 @@ export const formFields = [
   },
   { label: "Limiting Caloric Intake", type: "textarea", name: "caloricIntake" },
   { label: "Recent Diet Changes", type: "textarea", name: "recentDiet" },
-  { label: "Recent Loss", type: "textarea", name: "recentLoss" },
-  { label: "Loss in Months", type: "textarea", name: "lossInMonths" },
+  { label: "Recent Weight Loss", type: "number", name: "recentLoss" },
+  { label: "Weight Loss in Months", type: "number", name: "lossInMonths" },
 
   // Section 4
   { label: "Patient City", type: "text", name: "patientCity" },
@@ -194,10 +194,9 @@ export const formFields = [
     label: "Degree",
     type: "text",
     name: "degree",
-    options: ["highschool", "bachelor", "master", "doctorate"],
   },
   { label: "Degree Details", type: "textarea", name: "degreeText" },
   { label: "Include Sentence (To his credit, he has recently implemented a number of healthful lifestyle and dietary changes, resulting in significant weight loss.) ", type: "checkbox", name: "includeSentence" },
-  { label: " Include: Thank you for this referral", type: "checkbox", name: "signOff1" },
-  { label: " Include: It was a pleasure evaluating Mr. X", type: "checkbox", name: "signOff2" },
+  { label: " Include: Thank you for this referral", type: "checkbox", name: "signOff1Bool" },
+  { label: " Include: It was a pleasure evaluating Mr. X", type: "checkbox", name: "signOff2Bool" },
 ];

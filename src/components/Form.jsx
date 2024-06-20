@@ -16,16 +16,11 @@ import {
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { styled } from "@mui/material/styles";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { refData } from "../data/referringinfo";
 import dayjs, { Dayjs } from "dayjs";
-
-//!! current eating
-//!! eating habits
-//!! living situation
-//!! include sentence
-//!! sign off
+const { ipcRenderer } = window.require("electron");
+const fs = window.require("fs");
 
 /**
  * Represents a form component.
@@ -34,13 +29,13 @@ import dayjs, { Dayjs } from "dayjs";
  */
 function Form() {
   const [BMIBool, setBMIBool] = useState(false);
-
-  const [today, setToday] = useState(dayjs("2024-01-01"));
+  const todaysDate = new Date();
+  const [today, setToday] = useState(dayjs(todaysDate));
   const [formData, setFormData] = useState({
-    dateOfFax: "",
+    dateOfFax: today,
     patientFirstName: "",
     patientLastName: "",
-    DOB: "",
+    DOB: today,
     Age: 0,
     referringInfo: "",
     referringProvider: "",
@@ -50,13 +45,14 @@ function Form() {
     referringAddressC: "",
     referringCityState: "",
     referringFacilityFax: "",
-    currentDate: "",
+    currentDate: today,
     gender: "",
     pronoun: "",
     capPronoun: "",
+    capPossessive: "",
     possessive: "",
     genderContraction: "",
-    evalDate: "",
+    evalDate: today,
     presentMood: "",
     heightFeet: 0,
     heightInches: 0,
@@ -72,6 +68,7 @@ function Form() {
     otherWeightChallenges: "",
     medicalIssues: "",
     additionalWeightLossReasons: [],
+    additionalWeightLossReasonsDisplay: [],
     additionalWeightLossFreeText: "",
     chronicPainBool: false,
     chronicPainSentence: "",
@@ -79,6 +76,7 @@ function Form() {
     replacementSurgeryBool: false,
     replacementSurgerySentence: "",
     diabetes: false,
+    diabetesSentence: false,
     goalWeight: 0,
     goalBMI: 0,
     goalBMIClassification: "",
@@ -100,8 +98,8 @@ function Form() {
     eatingHabits: [],
     caloricIntake: "",
     recentDiet: "",
-    recentLoss: "",
-    lossInMonths: "",
+    recentLoss: 0,
+    lossInMonths: 0,
     patientCity: "",
     livingSituation: "",
     employStatus: "",
@@ -112,9 +110,13 @@ function Form() {
     degreeText: "",
     includeSentence: false,
     sentenceIncluded: "",
-    signOff1: false,
-    signOff2: false,
+    signOff1Bool: false,
+    signOff1: "",
+    signOff2Bool: false,
+    signOff2: "",
   });
+
+// !!SLEEP APNEA  & hypnoitcs
 
   /**
    * Handles the change event for form inputs.
@@ -122,26 +124,24 @@ function Form() {
    */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-
     switch (name) {
       case "gender":
         assignPronouns(value);
         break;
       case "referringInfo":
-        parseReferringInfo(e.target.selectedIndex);
+        parseReferringInfo(e.target.value);
         break;
+      case "additionalWeightLossReasonsDisplay":
       case "weightLossAttempts":
-        weightLossChange(e);
+      case "weightChallenges":
+      case "eatingHabits":
+        multiSelectChange(e);
         break;
       case "DOB":
         calculateAge(value);
         break;
-      case "goalWeight":
       case "weight":
+      case "goalWeight":
         calculateBMI(name, value);
         break;
       case "certainFoodCravings":
@@ -149,16 +149,15 @@ function Form() {
         str = str.concat(value);
         setFormData((prevState) => ({
           ...prevState,
-          certainFoodCravings: str,
+          certainFoodCravings: value,
+          certainFoodCravingsSentence:str
         }));
-        break;
-      case "additionalWeightLossReasons":
-        setAdditionalWeightLossReasons(e);
         break;
       case "sleepSatisfaction":
         if (checked) {
           setFormData((prevState) => ({
             ...prevState,
+            sleepSatisfaction: true,
             sleepSatisfactionText: "satisfied",
           }));
         }
@@ -166,27 +165,71 @@ function Form() {
       case "includeSentence":
         setFormData((prevState) => ({
           ...prevState,
+          includeSentence: checked,
           sentenceIncluded: `To ${formData.possessive} credit, ${formData.pronoun} has recently implemented a number of healthful lifestyle and dietary changes, resulting in significant weight loss`,
         }));
         break;
-      case "signOff1":
+      case "signOff1Bool":
         if (checked) {
           setFormData((prevState) => ({
             ...prevState,
             signOff1: "Thank you for this referral",
+            signOff1Bool: checked,
           }));
         }
         break;
-      case "signOff2":
-        if (checked) {  
+      case "signOff2Bool":
+        if (checked) {
           setFormData((prevState) => ({
             ...prevState,
-            signOff1: `It was a pleasure evaluating ${formData.genderContraction}.${formData.patientLastName}`,
+            signOff2: `It was a pleasure evaluating ${formData.genderContraction}.${formData.patientLastName}`,
+            signOff2Bool: checked,
           }));
         }
+        break;
+      case "hypnotics":
+      case "sleepApnea":
+      case "chronicPainBool":
+      case "replacementSurgeryBool":
+      case "diabetes":
+      case "cpap":
+      case "hypnoticsText":
+        setFormData((prevState) => ({
+          ...prevState,
+          [name]: type === "checkbox" ? checked : value,
+        }));
+        handleHandles();
+        break
       default:
+        setFormData((prevState) => ({
+          ...prevState,
+          [name]: type === "checkbox" ? checked : value,
+        }));
         break;
     }
+  };
+
+  /**
+   * Handles the change of a date value in the form.
+   * date.$D = day, date.$M+1 = month, date.$y = year
+   *
+   * @param {string} name - The name of the date field.
+   * @param {Date} date - The new date value.
+   */
+  const handleDateChange = (name, date) => {
+    if (name === "DOB") {
+      calculateAge(date);
+    }
+      let month = parseInt(date.$M) + 1;
+      let day = parseInt(date.$D);
+      let year = parseInt(date.$y);
+      date = `${month}/${day}/${year}`; // convert to Date object
+      setFormData((prevState) => ({
+        ...prevState,
+        [name]: date,
+      }));
+    
+   
   };
 
   /**
@@ -208,6 +251,14 @@ function Form() {
       ...prevState,
       Age: age,
     }));
+    let month = parseInt(dob.$M) + 1;
+      let day = parseInt(dob.$D);
+      let year = parseInt(dob.$y);
+      let date = `${month}/${day}/${year}`; // convert to Date object
+      setFormData((prevState) => ({
+        ...prevState,
+        DOB: date,
+      }));
   };
 
   /**
@@ -216,18 +267,38 @@ function Form() {
    *
    * @param {Event} e - The change event object.
    */
-  const weightLossChange = (e) => {
-    const { options } = e.target;
-    const selectedOptions = [];
+  const multiSelectChange = (e) => {
+    const options = e.target.value;
+    let selectedOptions = [...formData[e.target.name]];
     for (let i = 0; i < options.length; i++) {
-      if (options[i].selected) {
-        selectedOptions.push(options[i].value);
+      if (!selectedOptions.includes(options[i])) {
+        selectedOptions.push(options[i]);
       }
     }
-    setFormData((prevState) => ({
-      ...prevState,
-      weightLossAttempts: selectedOptions,
-    }));
+    selectedOptions = [...new Set(selectedOptions)];
+    switch (e.target.name) {
+      case "additionalWeightLossReasonsDisplay":
+        setAdditionalWeightLossReasons(selectedOptions);
+        break;
+      case "weightLossAttempts":
+        setFormData((prevState) => ({
+          ...prevState,
+          weightLossAttempts: selectedOptions,
+        }));
+        break;
+      case "weightChallenges":
+        setFormData((prevState) => ({
+          ...prevState,
+          weightChallenges: selectedOptions,
+        }));
+        break;
+      case "eatingHabits":
+        setFormData((prevState) => ({
+          ...prevState,
+          eatingHabits: selectedOptions,
+        }));
+        break;
+    }
   };
 
   /**
@@ -273,12 +344,14 @@ function Form() {
         ...prevState,
         goalBMI: BMI,
         goalBMIClassification: BMIClassification,
+        goalWeight: weight,
       }));
     } else {
       setFormData((prevState) => ({
         ...prevState,
         BMI,
         BMIClassification,
+        weight: weight,
       }));
     }
   };
@@ -289,22 +362,25 @@ function Form() {
    * @param {string} value - The value representing the gender.
    */
   const assignPronouns = (value) => {
-    let pronoun, capPronoun, possessive, genderContraction;
+    let pronoun, capPronoun, possessive, genderContraction, capPossessive;
     if (value === "male") {
       pronoun = "he";
       capPronoun = "He";
       possessive = "his";
       genderContraction = "Mr.";
+      capPossessive = "His";
     } else if (value === "female") {
       pronoun = "she";
       capPronoun = "She";
       possessive = "her";
       genderContraction = "Ms.";
+      capPossessive = "Her";
     } else if (value === "nonBinary") {
       pronoun = "they";
       capPronoun = "They";
       possessive = "their";
       genderContraction = "Mx.";
+      capPossessive = "Their";
     }
     setFormData((prevState) => ({
       ...prevState,
@@ -312,6 +388,8 @@ function Form() {
       possessive,
       genderContraction,
       capPronoun,
+      gender: value,
+      capPossessive,
     }));
   };
 
@@ -319,7 +397,14 @@ function Form() {
    * Parses the referring information based on the given index and updates the form data.
    * @param {number} index - The index of the referring information to parse.
    */
-  const parseReferringInfo = (index) => {
+  const parseReferringInfo = (value) => {
+    let index;
+    let fieldOptions = formFields[4].options;
+    for (let i = 0; i < fieldOptions.length; i++) {
+      if (value.includes(fieldOptions[i])) {
+        index = i;
+      }
+    }
     setFormData((prevState) => ({
       ...prevState,
       referringProvider: refData[index].provider,
@@ -327,58 +412,56 @@ function Form() {
       referringAddress: refData[index].address,
       referringCityState: refData[index].cityState,
       referringFacilityFax: refData[index].fax,
+      referringInfo: value,
     }));
   };
 
   /**
    * Sets the additional weight loss reasons based on the selected options.
    *
-   * @param {Event} e - The event object representing the change event.
+   * @param {Array} selectedOptions - The event object representing the change event.
    * @returns {void}
    */
-  const setAdditionalWeightLossReasons = (e) => {
-    const { options } = e.target;
-    const selectedOptions = [];
-    if (options) {
-      for (let i = 0; i < options.length; i++) {
-        if (options[i].selected) {
-          switch (options[i].value) {
+  const setAdditionalWeightLossReasons = (selectedOptions) => {
+    let optionsForForm = [
+      ...formData.additionalWeightLossReasons,
+    ];
+      for (let i = 0; i < selectedOptions.length; i++) {
+          switch (selectedOptions[i]) {
             case "Self-worth":
-              selectedOptions.push(
+              optionsForForm.push(
                 `${formData.capPronoun} believes that weight loss will help to bolster his feelings of self-worth`
               );
               break;
             case "Self-confidence":
-              selectedOptions.push(
+              optionsForForm.push(
                 `${formData.capPronoun} believes that weight loss will bolster his feelings of self-confidence`
               );
               break;
             case "Energy":
-              selectedOptions.push(
+              optionsForForm.push(
                 `Currently, ${formData.pronoun} is easily fatigued and anticipates that weight loss will lead to a greater degree of physical stamina`
               );
               break;
             case "Fitness":
-              selectedOptions.push(
+              optionsForForm.push(
                 `Currently, ${formData.capPronoun} is seeking to achieve a greater level of physical fitness and stamina`
               );
               break;
             case "Mobility":
-              selectedOptions.push(
+              optionsForForm.push(
                 `Currently, ${formData.capPronoun} is seeking to achieve an improved level of physical mobility.`
               );
               break;
             default:
               break;
           }
-        }
-      }
       setFormData((prevState) => ({
         ...prevState,
-        additionalWeightLossReasons: selectedOptions,
+        additionalWeightLossReasons: optionsForForm,
+        additionalWeightLossReasonsDisplay:selectedOptions,
       }));
     }
-    console.log(selectedOptions);
   };
 
   /**
@@ -390,35 +473,31 @@ function Form() {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log(formData);
-    const filteredData = Object.fromEntries(
-      Object.entries(formData).filter(([key, value]) => value)
-    );
-    if (Object.keys(filteredData).length !== Object.keys(formData).length) {
-      const emptyData = Object.keys(formData).filter(
-        (key) => !filteredData.hasOwnProperty(key)
-      );
-      alert(
-        "Please fill out all fields, the following are empty: " +
-          emptyData.join(", ")
-      );
-      return;
-    }
-    if (formData.chronicPainBool) {
-      handlePain();
-    }
-    if (formData.replacementSurgeryBool) {
-      handleReplacement();
-    }
-    if (formData.diabetes) {
-      handleDiabetes();
-    }
-    if (formData.sleepApnea) {
-      handleApnea();
-    }
-    if (formData.hypnotics) {
-      handleHypnotics();
+    try {
+      const filePath = ipcRenderer.invoke("generate-docx", formData);
+      console.log("Document generated at:", filePath);
+    } catch (error) {
+      console.error("Error generating document:", error);
     }
   };
+
+const handleHandles = () => {
+  if (formData.chronicPainBool) {
+    handlePain();
+  }
+  if (formData.replacementSurgeryBool) {
+    handleReplacement();
+  }
+  if (formData.diabetes) {
+    handleDiabetes();
+  }
+  if (formData.sleepApnea) {
+    handleApnea();
+  }
+  if (formData.hypnotics) {
+    handleHypnotics();
+  }
+};
 
   /**
    * Handles the pain data and updates the form data state.
@@ -477,19 +556,7 @@ function Form() {
     setFormData((prevState) => ({
       ...prevState,
       hypnoticsSentence: hypStr,
-    }));
-  };
 
-  /**
-   * Handles the change of a date value in the form.
-   *
-   * @param {string} name - The name of the date field.
-   * @param {Date} date - The new date value.
-   */
-  const handleDateChange = (name, date) => {
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: date,
     }));
   };
 
@@ -501,10 +568,11 @@ function Form() {
   };
 
   return (
-    <div style={{ width: "75%" }}>
+    <div style={{ width: "85%" }}>
+      <h2>Fill out all relavant fields, and hit submit to review</h2>
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <form onSubmit={handleSubmit}>
-          <Stack spacing={2}>
+          <Stack spacing={3}>
             {formFields.map((field) => (
               <div key={field.name}>
                 {field.type === "select" ? (
@@ -512,6 +580,7 @@ function Form() {
                     <FormControl fullWidth>
                       <InputLabel>{field.label}</InputLabel>
                       <Select
+                        variant="filled"
                         name={field.name}
                         value={formData[field.name]}
                         onChange={handleChange}>
@@ -532,8 +601,8 @@ function Form() {
                         {field.label}
                       </InputLabel>
                       <Select
+                        variant="filled"
                         multiple
-                        native
                         inputProps={{
                           id: "select-multiple",
                         }}
@@ -542,9 +611,9 @@ function Form() {
                         value={formData[field.name]}
                         onChange={handleChange}>
                         {field.options.map((option) => (
-                          <option key={option} value={option}>
+                          <MenuItem key={option} value={option}>
                             {option}
-                          </option>
+                          </MenuItem>
                         ))}
                       </Select>
                       <FormHelperText>Select multiple options</FormHelperText>
@@ -560,18 +629,19 @@ function Form() {
                       onChange={handleChange}
                       multiline
                       fullWidth
-                      variant="outlined"
+                      variant="filled"
                     />
                   </div>
                 ) : //--------------------------------------------------
                 field.type === "date" ? (
                   <div>
                     <DatePicker
+                      variant="filled"
                       label={field.label}
                       value={today}
                       onChange={(date) => handleDateChange(field.name, date)}
                       renderInput={(params) => (
-                        <TextField {...params} fullWidth />
+                        <TextField {...params} fullWidth variant="filled" />
                       )}
                     />
                   </div>
@@ -598,7 +668,8 @@ function Form() {
                       checked={formData[field.name]}
                       onClick={displayBMI}
                       type="button"
-                      variant="contained">
+                      variant="contained"
+                      color="davygray">
                       {field.label}
                     </Button>
                     {BMIBool && (
@@ -618,16 +689,18 @@ function Form() {
                       value={formData[field.name]}
                       onChange={handleChange}
                       fullWidth
-                      variant="outlined"
+                      variant="filled"
                     />
                   </div>
                 )}
               </div>
             ))}
           </Stack>
-          <Button variant="contained" color="amaranth" type="submit">
-            Submit
-          </Button>
+          <div className="buttonContainer">
+            <Button size="large" variant="contained" color="lavenderblush" type="submit" >
+              Submit
+            </Button>
+          </div>
         </form>
       </LocalizationProvider>
     </div>

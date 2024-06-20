@@ -1,5 +1,6 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+const path = require('path');
 
 module.exports = {
   packagerConfig: {
@@ -32,13 +33,13 @@ module.exports = {
     {
       name: '@electron-forge/plugin-webpack',
       config: {
-        mainConfig: './webpack.main.config.js',
+        mainConfig: path.resolve(__dirname, 'webpack.main.config.js'),
         renderer: {
-          config: './webpack.renderer.config.js',
+          config: path.resolve(__dirname, 'webpack.renderer.config.js'),
           entryPoints: [
             {
-              html: './src/index.html',
-              js: './src/renderer.js',
+              html: path.resolve(__dirname, 'src/index.html'),
+              js: path.resolve(__dirname, 'src/renderer.js'),
               name: 'main_window',
               preload: {
                 js: './src/preload.js',

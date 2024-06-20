@@ -4,6 +4,7 @@ import { HashRouter as Router, Route, Routes } from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Form from "./components/Form.jsx";
+const electron = window.require("electron")
 import "./index.css";
 
 function App() {
