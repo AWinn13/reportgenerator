@@ -19,9 +19,5 @@ module.exports = {
       net: false,
       tls: false,
     },
-  },
-  output: {
-    filename: "main.js",
-    path: path.resolve(__dirname, '.webpack/main'),
-  },
+  }
 };

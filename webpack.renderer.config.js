@@ -6,7 +6,7 @@ rules.push({
 });
 
 module.exports = {
-  entry: './src/renderer.js',
+  entry: './src/renderer/renderer.js',
   module: {
     rules,
   },
@@ -18,9 +18,5 @@ module.exports = {
       net: false,
       tls: false,
     },
-  },
-  output: {
-    filename: 'renderer.js',
-    path: path.resolve(__dirname, '.webpack/renderer'),
-  },
+  }
 };

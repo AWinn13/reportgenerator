@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import ReactDOM from "react-dom";
 import { formFields } from "../data/fieldConfig";
-import "../index.css";
+import "../renderer/index.css";
 import {
   TextField,
   MenuItem,
@@ -54,9 +54,9 @@ function Form() {
     genderContraction: "",
     evalDate: today,
     presentMood: "",
-    heightFeet: 0,
-    heightInches: 0,
-    weight: 0,
+    heightFeet: "0",
+    heightInches: "0",
+    weight: "0",
     BMI: 0,
     BMIClassification: "",
     owText: "",
@@ -77,8 +77,8 @@ function Form() {
     replacementSurgerySentence: "",
     diabetes: false,
     diabetesSentence: false,
-    goalWeight: 0,
-    goalBMI: 0,
+    goalWeight: "0",
+    goalBMI: "0",
     goalBMIClassification: "",
     secondMedicalIssue: "",
     sleepSatisfaction: false,
@@ -98,8 +98,8 @@ function Form() {
     eatingHabits: [],
     caloricIntake: "",
     recentDiet: "",
-    recentLoss: 0,
-    lossInMonths: 0,
+    recentLoss: "0",
+    lossInMonths: "0",
     patientCity: "",
     livingSituation: "",
     employStatus: "",

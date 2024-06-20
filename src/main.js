@@ -55,7 +55,7 @@ app.on("window-all-closed", () => {
 
 ipcMain.handle("generate-docx", async (event, formData, callback) => {
   try {
-    const content = fs.readFileSync(path.resolve("template.docx"), "binary");
+    const content = fs.readFileSync(path.resolve("./src/template.docx"), "binary");
     const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,

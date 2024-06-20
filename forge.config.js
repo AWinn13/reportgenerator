@@ -33,16 +33,17 @@ module.exports = {
     {
       name: '@electron-forge/plugin-webpack',
       config: {
-        mainConfig: path.resolve(__dirname, 'webpack.main.config.js'),
+        mainConfig: './webpack.main.config.js',
         renderer: {
-          config: path.resolve(__dirname, 'webpack.renderer.config.js'),
+          config: './webpack.renderer.config.js',
+          nodeIntegration: true,
           entryPoints: [
             {
-              html: path.resolve(__dirname, 'src/index.html'),
-              js: path.resolve(__dirname, 'src/renderer.js'),
               name: 'main_window',
+              html: './src/renderer/index.html',
+              js: './src/renderer/renderer.js',
               preload: {
-                js: './src/preload.js',
+                js: './src/renderer/preload.js',
               },
             },
           ],
