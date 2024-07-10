@@ -14,8 +14,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
-        node-version: [16.x]
+        os: [windows-latest]
+        node-version: [21.x]
 
     steps:
       - name: Checkout code
@@ -38,3 +38,44 @@ jobs:
         with:
           name: release
           path: out/make/*
+  
+  build_on_mac:
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        os: [macos-latest]
+        node-version: [21.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Decode macOS certificate
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+        run: echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
+
+      - name: Install certificate
+        run: |
+          security create-keychain -p "" build.keychain
+          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+
+      - name: Build Electron app
+        run: npm run dist
+
+      - name: Sign and notarize app
+        run: |
+          export CSC_LINK="certificate.p12"
+          export CSC_KEY_PASSWORD="${{ secrets.MACOS_CERTIFICATE_PASSWORD }}"
+          npm run release

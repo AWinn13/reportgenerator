@@ -5,24 +5,23 @@ const path = require('path');
 module.exports = {
   packagerConfig: {
     asar: true,
+    osxSign:{},
+    osxNotarize: {
+      appleId: "awinn1617@gmail.com",
+      appleIdPassword: ilrv-oygi-rxtz-oauk,
+    }
   },
   rebuildConfig: {},
   makers: [
-    {
-      name: '@electron-forge/maker-squirrel',
-      config: {},
-    },
     {
       name: '@electron-forge/maker-zip',
       platforms: ['darwin'],
     },
     {
-      name: '@electron-forge/maker-deb',
-      config: {},
-    },
-    {
-      name: '@electron-forge/maker-rpm',
-      config: {},
+      name: '@electron-forge/maker-dmg',
+      config: {
+        format: 'ULFO'
+      }
     },
   ],
   plugins: [
